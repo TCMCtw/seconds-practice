@@ -167,6 +167,8 @@
   footer a{color:var(--teal-bright);}
 
   @media (max-width:640px){
+    #pracToggle{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));}
+    #pracToggle .oct-btn{min-width:0;}
     .wrap{padding:14px 10px 32px;}
     .card{padding:12px 14px;margin-bottom:10px;}
     h1{font-size:20px;}
@@ -201,6 +203,7 @@
     <h2 id="txtPracTitle">選練習</h2>
     <div class="oct-toggle" id="pracToggle" style="margin-bottom:0;">
       <button class="oct-btn active" id="btnPracMaj" onclick="setPractice('maj')"></button>
+      <button class="oct-btn" id="btnPracMajMin3" onclick="setPractice('majmin3')"></button>
       <button class="oct-btn" id="btnPracMin" onclick="setPractice('min')"></button>
       <button class="oct-btn" id="btnPracMin3" onclick="setPractice('min3')"></button>
     </div>
@@ -283,7 +286,7 @@
   <footer>
     <span id="txtFooter1"></span><br>
     <span id="txtFooter2">台灣合唱音樂中心製作 · 練唱室 Practice Room</span><br>
-    <span style="opacity:.5;"><span id="txtVersionPrefix">App 版本：</span>v1.2(原型)</span><br>
+    <span style="opacity:.5;"><span id="txtVersionPrefix">App 版本：</span>v1.3(原型)</span><br>
     <span>© 2026 TCMC · <a href="https://creativecommons.org/licenses/by-nc/4.0/" style="color:inherit">CC BY-NC 4.0</a> · 教學使用不限收費，詳見 <a href="https://tcmctw.github.io/" style="color:inherit">tcmctw.github.io</a></span>
   </footer>
 
@@ -702,7 +705,7 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
 const CONFIG = {
   A4: 440,
   OCTAVES: [2, 3, 4],
-  OCTAVE_NOTE_CAP: { 4: 7 },
+  OCTAVE_NOTE_CAP: { 4: 12 },
   PARTIALS: [1, 0.5, 0.34, 0.24, 0.26, 0.24], // 與 v2.7 相同音色 same timbre as v2.7 (partials 1-6, 5+6 boosted)
   VOICE_GAIN: 0.55,
   MASTER_GAIN: 0.5,
@@ -735,7 +738,7 @@ const CONFIG = {
   SING_SMOOTH_OPTIONS: [1, 3, 5],
   SING_TOLC_MIN: 5, SING_TOLC_MAX: 200, SING_TOLC_STEP: 5,
   SING_RATIO_MIN: 0.5, SING_RATIO_MAX: 0.95, SING_RATIO_STEP: 0.05,
-  APP_VERSION: 'v1.2',
+  APP_VERSION: 'v1.3',
   DIAG_MIN_FRAMES: 20,
   DIAG_QUIET_PCT: 0.5,
   DIAG_VOICE_PCT: 0.4,
@@ -752,18 +755,12 @@ const CONFIG = {
 const SET = { tolCents: CONFIG.SING_TOLERANCE_CENTS, smooth: CONFIG.SING_SMOOTH_DEFAULT, ratio: CONFIG.SING_PASS_RATIO, tolSlider: CONFIG.TOLERANCE_CENTS, tolSlider1: CONFIG.TOLERANCE1_CENTS };
 const NOTE_NAMES = ['C','C♯','D','D♯','E','F','F♯','G','G♯','A','A♯','B'];
 const NOTE_NAMES_FLAT = ['C','D♭','D','E♭','E','F','G♭','G','A♭','A','B♭','B'];
-/* 兩種練習。r2 = 二度目標(相對固定低音的純律比);r3 = 解決目標;beatK3 = 解決目標重合泛音對中「高音」的泛音編號
-   (純大三度 5:4 → 低音5↔高音4;同音 1:1 → 低音1↔高音1)。
-   2026-10-28 Ray 已確認:固定低音、學生調/唱上方音;大二度往上解決到純大三度;小二度往下解決到同音;
-   先把二度調進容許範圍再接著走,兩步連續、不重新起題。
-   r2 的比例(大二度 9:8 對 10:9;小二度 16:15)仍未選定——目前值為暫定,改這裡即可切換。
-   two exercises. r2 = second-step just ratio above the fixed low tone; r3 = resolution target;
-   beatK3 = upper-voice partial number in the resolution's coincident pair (M3 5:4 -> low5/up4; unison 1:1 -> low1/up1).
-   Confirmed by Ray 2026-10-28: fixed low voice, student tunes/sings the upper voice; M2 resolves up to pure M3,
-   m2 resolves down to unison; second must enter tolerance first, then continue without a re-round.
-   r2 ratios (M2 9:8 vs 10:9; m2 16:15) are STILL unselected - current values provisional; switch here. */
+/* Four paths. Fixed bass; r2 is the second, r3 the resolution.
+   beatK3 is the upper-voice partial in the coincident pair.
+   Major second 9:8; minor second 16:15; major third 5:4; minor third 6:5. */
 const EXERCISES = {
   maj:  { r2: 9/8,   r3: 5/4, beatK3: 4 },
+  majmin3: { r2: 9/8, r3: 6/5, beatK3: 5 },
   min:  { r2: 16/15, r3: 1,   beatK3: 1 },
   min3: { r2: 16/15, r3: 6/5, beatK3: 5 }
 };
@@ -810,7 +807,7 @@ const I18N = {
     },
     pickTitle: '選一個音',
     octLow: '低', octMid: '中', octHigh: '高',
-    octLowSub: 'C2–B2 · 超低音域', octMidSub: 'C3–B3 · 男低音域', octHighSub: 'C4–G4 · 共用音域',
+    octLowSub: 'C2–B2 · 超低音域', octMidSub: 'C3–B3 · 男低音域', octHighSub: 'C4–C5 · 共用音域',
     play: '開始聆聽', stop: '停止', confirm: '確定', next: '再來一次',
     statusOff: '按「開始聆聽」', statusOn: '播放中',
     hint: '拍音 = 兩音頻率差的「哇～哇～」晃動。越接近，晃動越慢；完全對齊時消失。滑桿兩旁的 − ＋ 可以微調。',
@@ -931,7 +928,7 @@ const I18N = {
     },
     pickTitle: 'Pick a note',
     octLow: 'Low', octMid: 'Mid', octHigh: 'High',
-    octLowSub: 'C2–B2 · very low range', octMidSub: 'C3–B3 · bass range', octHighSub: 'C4–G4 · shared range',
+    octLowSub: 'C2–B2 · very low range', octMidSub: 'C3–B3 · bass range', octHighSub: 'C4–C5 · shared range',
     play: 'Start listening', stop: 'Stop', confirm: 'Confirm', next: 'Try again',
     statusOff: 'Press "Start listening"', statusOn: 'Playing',
     hint: 'Beating = the "wah-wah" wobble from the frequency difference of the two tones. The closer you get, the slower it wobbles; perfectly in tune, it disappears. Use the − ＋ buttons beside the slider for fine tuning.',
@@ -1184,6 +1181,20 @@ Object.defineProperty(I18N.en, 'singInstruction', {
   get(){ return `First press "Turn on microphone" and allow access; when you see "Microphone ready", press "Start singing". Listen to the reference tone first. Step 1: sing the ${step1Name()} above the fixed tone (about ${secondName()}); once steady, press "Confirm"; if at least ${Math.round(SET.ratio*100)}% of it stayed inside the band, "${step2Button()}" appears (the fixed tone keeps sounding, no need to press while singing). Step 2: press "${step2Button()}", then sing ${state.practice === 'min' ? 'down' : 'up'} to ${step2Name()} (about ${thirdName()}), then press "Confirm and finish". The target line stays visible while you sing so you can aim at it; the error figures and verdict are still hidden until you confirm. For EACH step, at least ${Math.round(SET.ratio*100)}% of your singing (onset to confirm) must stay inside the tolerance band (green, ±${currentTolCents()} cents); the first ~${CONFIG.SING_SETTLE_SEC} s of each step is not scored. Your voice is sent live into your headphones, mixed with the fixed tone. You MUST wear headphones, or the speaker sound feeds back into the microphone and howls. You can also turn on "Show pitch line" (off by default): while singing it shows the target line, the tolerance band and your voice: green inside the band, orange outside; error figures and the verdict still appear only after confirmation. Or press "${demo1Text()}" or "${demo2Text()}" to hear each part separately.`; }
 });
 
+/* v1.3: major second to minor third, after the major-third path. */
+I18N.zh.pracMajMin3 = '大二度 → 小三度<small>9:8 → 6:5</small>';
+I18N.en.pracMajMin3 = 'Major 2nd → minor 3rd<small>9:8 → 6:5</small>';
+I18N.zh.prac.majmin3 = {
+  short: '大二度→小三度',
+  sub: '固定低音會一直響,你調(或唱)它上方的音。第一步:調出大二度,調進容許範圍。第二步:把同一個音往上移,解決到純小三度。畫面上的 Hz 與拍數是依音高算出的對照數值,用來比對你聽到的聲音。建議戴耳機。',
+  overtone: I18N.zh.prac.min3.overtone
+};
+I18N.en.prac.majmin3 = {
+  short: 'Major 2nd → minor 3rd',
+  sub: 'The fixed low tone keeps sounding; you tune (or sing) the note above it. Step 1: tune the major second into the allowed range. Step 2: move the same note up to resolve into the pure minor third. The Hz and beat figures on screen are computed from the pitches, to compare against what you hear. Headphones recommended.',
+  overtone: I18N.en.prac.min3.overtone
+};
+
 function t(key){ return I18N[state.lang][key]; }
 
 /* ================= STATE ================= */
@@ -1199,7 +1210,7 @@ const state = {
   answerCents: 0,
   compare: null,
   mode: 'slider',
-  practice: 'maj',       // 'maj' | 'min'
+  practice: 'maj',       // 'maj' | 'majmin3' | 'min' | 'min3'
   showLine: CONFIG.SING_LINE_DEFAULT,
   singing: false,
   singLast: null
@@ -1263,7 +1274,7 @@ function centsToRatio(cents){ return Math.pow(2, cents / 1200); }
 // 拍音上限(每秒次數 = 與目標音的頻率差)換算成該音高的 ±cent;同樣的拍音,音越高 cent 越窄
 // max beating (beats/s = Hz difference from target) as a ±cent band at a given pitch: the same beat rate is a narrower cents band on higher notes
 function beatsToCents(beats, targetHz){ return 1200 * Math.log2((targetHz + beats) / targetHz); }
-function currentNoteName(){ return NOTE_NAMES[state.noteIdx] + CONFIG.OCTAVES[state.octaveIdx]; }
+function currentNoteName(){ return NOTE_NAMES[state.noteIdx % 12] + (CONFIG.OCTAVES[state.octaveIdx] + Math.floor(state.noteIdx / 12)); }
 function ex(){ return EXERCISES[state.practice]; }
 function targetRatio(){ return state.step === 2 ? ex().r3 : ex().r2; }
 function baseFreq(){ return noteFreq(CONFIG.OCTAVES[state.octaveIdx], state.noteIdx); }
@@ -1272,7 +1283,7 @@ function noteNameOfFreq(f, flat){
   const names = flat ? NOTE_NAMES_FLAT : NOTE_NAMES;
   return names[((m % 12) + 12) % 12] + (Math.floor(m / 12) - 1);
 }
-function secondName(){ return noteNameOfFreq(baseFreq() * ex().r2, state.practice !== 'maj'); } // 小二度用降號拼法(如 C 上是 D♭) m2 spelled with flats (Db above C)
+function secondName(){ return noteNameOfFreq(baseFreq() * ex().r2, ex().r2 !== 9/8); } // 小二度用降號拼法(如 C 上是 D♭) m2 spelled with flats (Db above C)
 function thirdName(){ return noteNameOfFreq(baseFreq() * ex().r3, state.practice !== 'maj'); } // 小三度用降號拼法(如 C 上是 E♭);同音不受影響 m3 spelled with flats (Eb above C); unison unaffected
 function targetNoteName(){ return noteNameOfFreq(currentTargetFreq(), state.practice !== 'maj'); } // 小三度也用降號拼法(如 C 上是 E♭) m3 also spelled with flats (Eb above C)
 // 設定說明裡用的名稱,例:大二度→大三度 C3→D3→E3 label used in settings/report text
@@ -1282,12 +1293,12 @@ function practiceTargetName(){
 function currentTolCents(){ return SET.tolCents; } // 容差 = 綠色帶 ±cent tolerance = green band ±cents
 // 滑桿判定容差:兩步同一標準,進階設定可調(預設 ±2 cent,同 v2.7 齊唱) slider verdict tolerance: one adjustable standard for both steps (default ±2 cents, same as v2.7 unison)
 function stepTolerance(){ return state.step === 1 ? SET.tolSlider1 : SET.tolSlider; }
-function step1Name(){ return state.practice === 'maj' ? t('secondMaj') : t('secondMin'); }
-function step2Name(){ return state.practice === 'maj' ? t('targetMaj') : (state.practice === 'min3' ? t('targetMin3') : t('targetMin')); }
-function singPhase2Label(){ return state.practice === 'maj' ? t('singPhase2') : (state.practice === 'min3' ? t('singPhase2Min3') : t('singPhase2Min')); }
-function step2Button(){ return state.practice === 'maj' ? t('goStep2') : (state.practice === 'min3' ? t('goStep2Min3') : t('goStep2Min')); }
+function step1Name(){ return ex().r2 === 9/8 ? t('secondMaj') : t('secondMin'); }
+function step2Name(){ return state.practice === 'maj' ? t('targetMaj') : ((state.practice === 'min3' || state.practice === 'majmin3') ? t('targetMin3') : t('targetMin')); }
+function singPhase2Label(){ return state.practice === 'maj' ? t('singPhase2') : ((state.practice === 'min3' || state.practice === 'majmin3') ? t('singPhase2Min3') : t('singPhase2Min')); }
+function step2Button(){ return state.practice === 'maj' ? t('goStep2') : ((state.practice === 'min3' || state.practice === 'majmin3') ? t('goStep2Min3') : t('goStep2Min')); }
 function demo1Text(){ return t('demoSecond'); }
-function demo2Text(){ return state.practice === 'maj' ? t('demoThirdMaj') : (state.practice === 'min3' ? t('demoThirdMin') : t('demoUnison')); }
+function demo2Text(){ return state.practice === 'maj' ? t('demoThirdMaj') : ((state.practice === 'min3' || state.practice === 'majmin3') ? t('demoThirdMin') : t('demoUnison')); }
 /* v0.2:調整中即時顯示目標/目前的 Hz 與拍數(拍數為依音高算出的數值,定義隨步驟標明)
    v0.2: live target/current Hz and beat readout during adjustment (beat figures computed from pitches, definition labeled per step) */
 function currentAdjHz(){ return baseFreq() * centsToRatio(currentAbsCents()); } // 只看絕對座標:換步驟不改頻率 derived from the absolute coordinate only: switching steps cannot change the pitch
@@ -1641,11 +1652,11 @@ function pureVsEtNote(r){
 function updateStepUI(){
   const s2 = state.step === 2;
   const p = state.practice;
-  document.getElementById('txtStep').textContent = t(s2 ? (p === 'maj' ? 'step2Maj' : (p === 'min3' ? 'step2Min3' : 'step2Min')) : (p === 'maj' ? 'step1Maj' : 'step1Min'));
-  document.getElementById('txtHint').textContent = s2 ? (p === 'maj' ? t('hintThirdMaj') : (p === 'min3' ? t('hintThirdMin') : t('hintUnison'))) : t('hintSecond');
+  document.getElementById('txtStep').textContent = t(s2 ? (p === 'maj' ? 'step2Maj' : ((p === 'min3' || p === 'majmin3') ? 'step2Min3' : 'step2Min')) : (ex().r2 === 9/8 ? 'step1Maj' : 'step1Min'));
+  document.getElementById('txtHint').textContent = s2 ? (p === 'maj' ? t('hintThirdMaj') : ((p === 'min3' || p === 'majmin3') ? t('hintThirdMin') : t('hintUnison'))) : t('hintSecond');
   document.getElementById('etNote').textContent = pureVsEtNote(s2 ? ex().r3 : ex().r2); // 固定顯示本步目標純律與平均律的系統差(與使用者答案誤差無關) fixed system just-vs-ET difference, not the user's answer error
-  document.getElementById('btnGoStep2').textContent = p === 'maj' ? t('goStep2') : (p === 'min3' ? t('goStep2Min3') : t('goStep2Min'));
-  document.getElementById('btnSingPhase2').textContent = p === 'maj' ? t('singPhase2') : (p === 'min3' ? t('singPhase2Min3') : t('singPhase2Min'));
+  document.getElementById('btnGoStep2').textContent = p === 'maj' ? t('goStep2') : ((p === 'min3' || p === 'majmin3') ? t('goStep2Min3') : t('goStep2Min'));
+  document.getElementById('btnSingPhase2').textContent = p === 'maj' ? t('singPhase2') : ((p === 'min3' || p === 'majmin3') ? t('singPhase2Min3') : t('singPhase2Min'));
   document.getElementById('btnSingGo').textContent = step2Button();
   updateReadout();
 }
@@ -1735,7 +1746,7 @@ function renderReveal(){
   const vEl = document.getElementById('verdictText');
   const dEl = document.getElementById('detailText');
   if(ok){
-    vEl.textContent = s2 ? (state.practice === 'maj' ? t('verdictOkThirdMaj') : (state.practice === 'min3' ? t('verdictOkThirdMin') : t('verdictOkUnison'))) : t('verdictOkSecond');
+    vEl.textContent = s2 ? (state.practice === 'maj' ? t('verdictOkThirdMaj') : ((state.practice === 'min3' || state.practice === 'majmin3') ? t('verdictOkThirdMin') : t('verdictOkUnison'))) : t('verdictOkSecond');
     vEl.classList.add('ok');
     dEl.textContent = t('detailOkStep')(ac.toFixed(1), tol);
   } else {
@@ -1849,6 +1860,7 @@ function setPractice(p){
 }
 function updatePracticeUI(){
   document.getElementById('btnPracMaj').classList.toggle('active', state.practice === 'maj');
+  document.getElementById('btnPracMajMin3').classList.toggle('active', state.practice === 'majmin3');
   document.getElementById('btnPracMin').classList.toggle('active', state.practice === 'min');
   document.getElementById('btnPracMin3').classList.toggle('active', state.practice === 'min3');
   applyPracticeTexts();
@@ -2185,8 +2197,8 @@ function buildDiagModel(){
     let verdict = null;
     const th = Math.round(SET.ratio * 100);
     const pracKey = st.practice ? st.practice : state.practice;
-    const s1Name = pracKey === 'maj' ? t('secondMaj') : t('secondMin');
-    const s2Name = pracKey === 'maj' ? t('targetMaj') : (pracKey === 'min3' ? t('targetMin3') : t('targetMin'));
+    const s1Name = EXERCISES[pracKey].r2 === 9/8 ? t('secondMaj') : t('secondMin');
+    const s2Name = pracKey === 'maj' ? t('targetMaj') : ((pracKey === 'min3' || pracKey === 'majmin3') ? t('targetMin3') : t('targetMin'));
     const steps = st.perfSteps;
     const stepLine = (name, s) => {
       if(!s || !s.voiced){ return t('repStepNoVoice')(name); }
@@ -2441,7 +2453,7 @@ function buildPickers(){
   const curOct = CONFIG.OCTAVES[state.octaveIdx];
   const noteCap = (CONFIG.OCTAVE_NOTE_CAP && CONFIG.OCTAVE_NOTE_CAP[curOct] !== undefined) ? CONFIG.OCTAVE_NOTE_CAP[curOct] : NOTE_NAMES.length - 1;
   if(state.noteIdx > noteCap){ state.noteIdx = noteCap; } // 切到部分八度時,把選中的音收回範圍內 clamp selection into a partial octave
-  NOTE_NAMES.slice(0, noteCap + 1).forEach((name, i) => {
+  Array.from({length: noteCap + 1}, (_, i) => i < 12 ? NOTE_NAMES[i] : NOTE_NAMES[i % 12] + (curOct + Math.floor(i / 12))).forEach((name, i) => {
     const b = document.createElement('button');
     b.className = 'key-btn' + (i === state.noteIdx ? ' active' : '');
     b.textContent = name;
@@ -2523,6 +2535,7 @@ function applyLang(){
   document.getElementById('btnModeSing').textContent = t('modeSing');
   document.getElementById('txtPracTitle').textContent = t('pracTitle');
   document.getElementById('btnPracMaj').innerHTML = t('pracMaj');
+  document.getElementById('btnPracMajMin3').innerHTML = t('pracMajMin3');
   document.getElementById('btnPracMin').innerHTML = t('pracMin');
   document.getElementById('btnPracMin3').innerHTML = t('pracMin3');
   updatePracticeUI();
